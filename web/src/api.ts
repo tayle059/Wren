@@ -1,5 +1,6 @@
-// Small fetch helpers. Family and device tokens live in localStorage on their
-// own devices; every read is guarded because storage can be unavailable.
+// Small fetch helpers. The family session is an HttpOnly cookie the page can't
+// read. The tablet's device token lives in localStorage on the tablet; every
+// storage access is guarded because storage can be unavailable.
 
 function store(key: string, value?: string | null): string | null {
   try {
@@ -14,13 +15,6 @@ function store(key: string, value?: string | null): string | null {
 
 const memory: Record<string, string | null> = {};
 export const tokens = {
-  get family() {
-    return memory.family ?? store('kindred.family');
-  },
-  set family(v: string | null) {
-    memory.family = v;
-    store('kindred.family', v);
-  },
   get device() {
     return memory.device ?? store('kindred.device');
   },
@@ -55,12 +49,31 @@ async function request<T>(path: string, init: RequestInit & { token?: string | n
 const json = (b: unknown) => JSON.stringify(b);
 
 export const family = {
-  get: <T>(path: string) => request<T>(`/api${path}`, { token: tokens.family }),
-  post: <T>(path: string, body: unknown = {}) => request<T>(`/api${path}`, { method: 'POST', body: json(body), token: tokens.family }),
-  patch: <T>(path: string, body: unknown) => request<T>(`/api${path}`, { method: 'PATCH', body: json(body), token: tokens.family }),
-  del: <T>(path: string) => request<T>(`/api${path}`, { method: 'DELETE', token: tokens.family }),
-  upload: <T>(path: string, form: FormData) => request<T>(`/api${path}`, { method: 'POST', body: form, token: tokens.family }),
-  events: (path: string) => new EventSource(`/api${path}?token=${encodeURIComponent(tokens.family ?? '')}`),
+  get: <T>(path: string) => request<T>(`/api${path}`),
+  post: <T>(path: string, body: unknown = {}) => request<T>(`/api${path}`, { method: 'POST', body: json(body) }),
+  patch: <T>(path: string, body: unknown) => request<T>(`/api${path}`, { method: 'PATCH', body: json(body) }),
+  del: <T>(path: string) => request<T>(`/api${path}`, { method: 'DELETE' }),
+  upload: <T>(path: string, form: FormData) => request<T>(`/api${path}`, { method: 'POST', body: form }),
+  events: (path: string) => new EventSource(`/api${path}`), // the session cookie goes along automatically
+};
+
+/** Remembers an invitation across a Google/Apple/Facebook round trip. */
+export const pendingInvite = {
+  get: () => {
+    try {
+      return sessionStorage.getItem('kindred.invite');
+    } catch {
+      return null;
+    }
+  },
+  set: (v: string | null) => {
+    try {
+      if (v) sessionStorage.setItem('kindred.invite', v);
+      else sessionStorage.removeItem('kindred.invite');
+    } catch {
+      // Without storage the person just opens the invite link again after signing in.
+    }
+  },
 };
 
 export const device = {

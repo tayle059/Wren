@@ -696,3 +696,7 @@
     animation: none !important;
   }
 }
+.pairing-or {
+  font-size: 1.1rem !important;
+  color: #6b5646;
+}

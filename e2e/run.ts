@@ -59,7 +59,7 @@ async function main() {
   mkdirSync(join(process.cwd(), 'e2e', 'artifacts'), { recursive: true });
   const wavPath = join(process.cwd(), 'e2e', 'artifacts', 'speech.wav');
   writeFileSync(wavPath, fakeSpeechWav());
-  const env = { ...process.env, DATA_DIR: data, PORT: String(PORT), KINDRED_STT: 'fake', NODE_ENV: 'production', META_API_KEY: '', NODE_OPTIONS: '--disable-warning=ExperimentalWarning' };
+  const env = { ...process.env, DATA_DIR: data, PORT: String(PORT), KINDRED_STT: 'fake', NODE_ENV: 'production', META_API_KEY: '', GOOGLE_CLIENT_ID: 'e2e', GOOGLE_CLIENT_SECRET: 'e2e', APPLE_CLIENT_ID: 'e2e', APPLE_TEAM_ID: 'e2e', APPLE_KEY_ID: 'e2e', APPLE_PRIVATE_KEY: 'e2e', FACEBOOK_APP_ID: 'e2e', FACEBOOK_APP_SECRET: 'e2e', NODE_OPTIONS: '--disable-warning=ExperimentalWarning' };
 
   step('Seed a fresh demo world');
   execFileSync('npx', ['tsx', 'server/seed.ts'], { env, stdio: 'inherit' });
@@ -89,6 +89,11 @@ async function main() {
     step('Family: open the live demo');
     await fam.goto(`${BASE}/#/`);
     await shot(fam, '01-landing');
+    await fam.getByRole('link', { name: /I’m family or a caregiver/ }).click();
+    await fam.getByRole('heading', { name: 'Welcome back' }).waitFor();
+    check(await fam.getByText('Continue with Apple').isVisible(), 'Google, Apple and Facebook sign-in buttons shown');
+    await shot(fam, '00-sign-in');
+    await fam.goto(`${BASE}/#/`);
     await fam.getByRole('button', { name: /Try the live demo/ }).click();
     await fam.getByRole('heading', { name: 'Rose today' }).waitFor();
     check(await fam.getByText('noticed something').isVisible(), 'sundown suggestion is shown');
@@ -106,18 +111,26 @@ async function main() {
     }
     await fam.getByRole('link', { name: 'Today' }).click();
 
-    step('Tablet: pair with a one-time code link');
-    const token = await fam.evaluate(() => localStorage.getItem('kindred.family'));
-    const auth = { Authorization: `Bearer ${token}` };
-    const me = await api<{ patients: { id: string }[] }>('/api/me', { headers: auth });
+    step('Tablet: pair by QR code');
+    const fget = async <T,>(path: string): Promise<T> => (await fam.request.get(`${BASE}${path}`)).json() as Promise<T>;
+    const fpost = async <T,>(path: string, data: unknown = {}): Promise<T> => (await fam.request.post(`${BASE}${path}`, { data })).json() as Promise<T>;
+    const me = await fget<{ patients: { id: string }[] }>('/api/me');
     const pid = me.patients[0].id;
-    const { code } = await api<{ code: string }>(`/api/patients/${pid}/pairing`, { method: 'POST', headers: auth, body: '{}' });
+    await fam.getByRole('button', { name: 'Connect tablet' }).click();
+    await fam.locator('.pair-qr img').waitFor();
+    await fam.waitForFunction(() => /\d{3} \d{3}/.test(document.querySelector('.pair-code')?.textContent ?? ''));
+    const code = (await fam.locator('.pair-code').innerText()).replace(/\D/g, '');
+    await shot(fam, '06a-family-qr');
     const tablet = await ctx.newPage();
     tablet.on('pageerror', (e) => failures.push(`tablet page error: ${e.message}`));
     tablet.on('console', (m) => (m.type() === 'warning' || m.type() === 'error') && console.log(`    [tablet] ${m.text()}`));
     await tablet.setViewportSize({ width: 1280, height: 800 });
     await tablet.goto(`${BASE}/#/companion?pair=${code}&demo`);
     await tablet.getByRole('button', { name: /Tap to wake/ }).waitFor();
+    await fam.locator('.pair-done').waitFor({ timeout: 15000 });
+    check(true, 'family dialog shows the tablet connected');
+    await shot(fam, '06b-family-qr-connected');
+    await fam.getByRole('button', { name: 'Done' }).click();
     await shot(tablet, '06-tablet-wake');
     await tablet.getByRole('button', { name: /Tap to wake/ }).click();
     await tablet.getByRole('button', { name: /Talk with Wren/ }).first().waitFor();
@@ -144,15 +157,15 @@ async function main() {
     step('Reminder: family reaches out, the tablet shows the card, Rose taps "I took it"');
     // Let the current conversation wind down first.
     await tablet.evaluate(() => (document.querySelector('.orb') as HTMLButtonElement)?.click());
-    const sched = await api<{ id: string; label: string }[]>(`/api/patients/${pid}/schedule`, { headers: auth });
+    const sched = await fget<{ id: string; label: string }[]>(`/api/patients/${pid}/schedule`);
     const pills = sched.find((s) => s.label === 'Evening pills')!;
-    await api(`/api/patients/${pid}/reach-out`, { method: 'POST', headers: auth, body: JSON.stringify({ kind: 'item', scheduleItemId: pills.id }) });
+    await fpost(`/api/patients/${pid}/reach-out`, { kind: 'item', scheduleItemId: pills.id });
     await tablet.locator('.reminder-card').waitFor({ timeout: 60000 });
     await shot(tablet, '11-tablet-reminder');
     await tablet.getByRole('button', { name: 'I took it' }).click();
     await tablet.locator('.reminder-card').waitFor({ state: 'detached', timeout: 15000 });
     await fam.waitForTimeout(1500);
-    const home = await api<{ today: { schedule: { label: string; status: string }[] } }>(`/api/patients/${pid}/home`, { headers: auth });
+    const home = await fget<{ today: { schedule: { label: string; status: string }[] } }>(`/api/patients/${pid}/home`);
     check(home.today.schedule.find((s) => s.label === 'Evening pills')?.status === 'confirmed', 'evening pills recorded as confirmed');
 
     step('Typed input (demo director) and the "Where is Frank?" rule');
@@ -164,11 +177,45 @@ async function main() {
     const caption = await tablet.locator('.caption').innerText();
     check(!/died|passed|dead/i.test(caption), `no death announcement ("${caption}")`);
 
+    step('Security: two-step verification setup, and inviting family by QR');
+    await fam.goto(`${BASE}/#/family/settings`);
+    await fam.getByRole('button', { name: 'Turn on two-step verification' }).click();
+    await fam.locator('.setup-2fa img').waitFor();
+    await fam.locator('#security').scrollIntoViewIfNeeded();
+    await fam.locator('#security').screenshot({ path: join(SHOTS, '13-security-2fa.png') });
+    ok('screenshot 13-security-2fa.png');
+    check((await fam.getByText('Where you’re signed in').count()) === 1, 'signed-in devices listed');
+    await fam.getByRole('button', { name: 'Cancel' }).first().click();
+    await fam.getByRole('button', { name: 'Invite family' }).click();
+    await fam.getByLabel(/They are Rose’s/).fill('Son');
+    await fam.getByRole('button', { name: 'Create invitation' }).click();
+    await fam.locator('.dialog .qr img').waitFor();
+    await shot(fam, '14-invite-qr');
+    const inviteUrl = await fam.getByLabel('Invitation link').inputValue();
+    await fam.getByRole('button', { name: 'Done' }).click();
+
+    step('A son accepts the invitation on his own phone');
+    const sonCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const son = await sonCtx.newPage();
+    son.on('pageerror', (e) => failures.push(`invitee page error: ${e.message}`));
+    await son.goto(inviteUrl.replace(/^https?:\/\/[^/]+/, BASE));
+    await son.getByText('invited you to help care for').waitFor();
+    await son.getByRole('button', { name: 'New here? Create an account' }).click();
+    await son.getByLabel('Your name').fill('Tom Miller');
+    await son.getByLabel('Email').fill('tom@example.com');
+    await son.locator('input[type=password]').fill('a long harbor sunrise 42');
+    await son.waitForTimeout(500);
+    await shot(son, '15-join-signup');
+    await son.getByRole('button', { name: 'Create account' }).click();
+    await son.getByRole('button', { name: 'Join' }).click();
+    await son.getByRole('heading', { name: 'Rose today' }).waitFor();
+    check(true, 'invited family member joined and sees Rose’s day');
+    await sonCtx.close();
+
     step('Phone layout');
     const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     const p = await phone.newPage();
-    await p.goto(`${BASE}/#/`);
-    await p.evaluate((t) => localStorage.setItem('kindred.family', t!), token);
+    await p.request.post(`${BASE}/api/auth/login`, { data: { email: 'sarah@kindred.demo', password: 'kindred-demo' } });
     await p.goto(`${BASE}/#/family`);
     await p.getByRole('heading', { name: 'Rose today' }).waitFor();
     await shot(p, '12-phone-today');

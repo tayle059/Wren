@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { family, tokens } from '../api';
+import { family } from '../api';
 import { useData, useFamily } from './Family';
-import { PairDialog } from './PairDialog';
+import { FamilyAndDevices } from './FamilyAndDevices';
+import { Security } from './Security';
 import { to12h } from './format';
 
 interface Profile {
@@ -30,7 +31,6 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
   const { data: schedule, reload: reloadSchedule } = useData<ScheduleItem[]>(`/patients/${pid}/schedule`);
   const [draft, setDraft] = useState<Profile | null>(null);
   const [pin, setPin] = useState('');
-  const [pairOpen, setPairOpen] = useState(false);
   const [pushState, setPushState] = useState<'unknown' | 'on' | 'off' | 'unsupported'>('unknown');
 
   useEffect(() => setDraft(profile), [profile]);
@@ -77,7 +77,6 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
 
   const signOut = async () => {
     await family.post('/auth/logout').catch(() => {});
-    tokens.family = null;
     onSignOut();
   };
 
@@ -95,6 +94,17 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
           <h1>{name} and Wren</h1>
         </div>
       </header>
+      <nav className="subnav" aria-label="Settings sections">
+        <a href="#/family/settings" onClick={(e) => (e.preventDefault(), document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }))}>
+          {name} &amp; Wren
+        </a>
+        <a href="#/family/settings" onClick={(e) => (e.preventDefault(), document.getElementById('tablets')?.scrollIntoView({ behavior: 'smooth' }))}>
+          Family &amp; tablets
+        </a>
+        <a href="#/family/settings" onClick={(e) => (e.preventDefault(), document.getElementById('security')?.scrollIntoView({ behavior: 'smooth' }))}>
+          Security
+        </a>
+      </nav>
 
       <section className="card">
         <h2>Notifications</h2>
@@ -110,7 +120,7 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
       </section>
 
       <section className="card">
-        <h2>About {name}</h2>
+        <h2 id="about">About {name}</h2>
         <label className="field">
           What the family wants Wren to know
           <small>Wren reads this before every conversation. Likes, dislikes, topics to avoid, what calms them.</small>
@@ -183,12 +193,11 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
         </ul>
       </section>
 
-      <section className="card">
-        <h2>Tablet</h2>
-        <button className="btn" onClick={() => setPairOpen(true)}>
-          Connect a tablet
-        </button>
-      </section>
+      <h2 className="section-title">Family &amp; tablets</h2>
+      <FamilyAndDevices />
+
+      <h2 className="section-title">Security</h2>
+      <Security />
 
       <section className="card">
         <h2>Demo tools</h2>
@@ -201,7 +210,6 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
       <button className="btn danger" onClick={() => void signOut()}>
         Sign out
       </button>
-      {pairOpen && <PairDialog onClose={() => setPairOpen(false)} />}
     </div>
   );
 }

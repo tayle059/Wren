@@ -25,7 +25,11 @@ export function Pairing({ onPaired }: { onPaired: () => void }) {
     <main className="pairing">
       <form onSubmit={submit} className="pairing-card">
         <h1>Set up this tablet</h1>
-        <p>In the Kindred app on a family member’s phone, open <b>Settings → Connect a tablet</b> and enter the 6-digit code here.</p>
+        <p>
+          Easiest: on a family member’s phone, open Kindred and tap <b>Connect tablet</b>. Then point this tablet’s <b>Camera</b> at the QR code
+          and tap the link.
+        </p>
+        <p className="pairing-or">Or type the 6-digit code shown under the QR code:</p>
         <input
           className="pairing-code"
           inputMode="numeric"

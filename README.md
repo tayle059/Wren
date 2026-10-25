@@ -13,6 +13,7 @@ Built on **Meta Muse Spark** (conversation, tool use, vision, nightly reflection
 |---|---|
 | ![Wren showing a photo of Leo](docs/screenshots/08-tablet-photo.png) | ![Rose today](docs/screenshots/02-family-today.png) |
 | ![A reminder card](docs/screenshots/11-tablet-reminder.png) | ![Insights](docs/screenshots/03-family-insights.png) |
+| ![Connect a tablet by QR code](docs/screenshots/06a-family-qr.png) | ![Sign in with Google, Apple or Facebook](docs/screenshots/00-sign-in.png) |
 
 ---
 
@@ -87,6 +88,32 @@ If Muse Spark is slow or unavailable, the **offline brain** answers in the same 
 
 ---
 
+## Setting up a home
+
+- **Add a tablet by QR code.** In the family app, tap **Connect tablet**, then point the tablet's camera at the code and tap the link. Kindred opens already connected, and your screen says so. Tablets without a camera can type the 6-digit code instead. Codes work once and refresh every 15 minutes.
+- **Invite family.** Go to **Settings → Family & tablets → Invite family**. Someone in the room scans the QR code; someone far away gets the link. They sign up (or use Google, Apple or Facebook) and join with one tap. Invitations work once, for 7 days.
+- **Manage tablets.** Each tablet shows when it was last seen, and can be renamed or disconnected. Disconnecting signs it out at once.
+
+## Account security
+
+| Protection | What it means |
+|---|---|
+| Sign in with Google, Apple, Facebook | Authorization-code flow with PKCE (Google, Facebook). A one-time `state` is bound to the browser that started sign-in, which stops login CSRF. ID token issuer, audience, expiry and nonce are checked. Accounts link automatically only on a provider-**verified** email. |
+| Two-step verification | Authenticator-app codes (RFC 6238), one step of clock drift allowed, the same code never accepted twice. Ten single-use backup codes, stored hashed. Turning it off needs a current code or your password. |
+| Sessions | An HttpOnly, SameSite=Lax cookie, Secure on HTTPS, so page scripts can't read it. It expires after 30 days without use. **Where you're signed in** lists every device, and any of them can be signed out. Changing your password signs out all the others. |
+| Passwords | scrypt hashing. At least 10 characters, with common passwords and name- or email-based passwords refused. Live strength feedback while you type. |
+| Brute force | 5 wrong passwords pause an account for 15 minutes. Sign-in, two-step, sign-up, pairing and invitation lookups are rate-limited per address. Unknown emails get the same answer as wrong passwords. |
+| Activity log | **Settings → Security** shows sign-ins, failed attempts, lockouts, two-step changes, connected tablets and new family members. |
+| Browser hardening | A strict Content-Security-Policy (only Kindred's own scripts run), HSTS on HTTPS, `X-Frame-Options: DENY`, and a Permissions-Policy. |
+
+### Turning on Google, Apple and Facebook sign-in
+
+Each button works once its keys are set (in `.env` or in Render's **Environment** tab). Register this redirect URL with each provider: `https://YOUR-ADDRESS/api/auth/oauth/<provider>/callback`.
+
+- **Google:** in Google Cloud Console → APIs & Services → Credentials, create an *OAuth client ID* (Web application). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+- **Apple:** in Apple Developer → Certificates, IDs & Profiles, create a *Services ID* with Sign in with Apple, add your domain and the redirect URL, then create a *Key* with Sign in with Apple. Set `APPLE_CLIENT_ID` (the Services ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` (the `.p8` contents). Apple requires HTTPS.
+- **Facebook:** at developers.facebook.com, create an app with *Facebook Login*, add the redirect URL under Valid OAuth Redirect URIs, and set `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET`.
+
 ## How it fits together
 
 ```
@@ -126,7 +153,7 @@ If Muse Spark is slow or unavailable, the **offline brain** answers in the same 
 ## Tests
 
 ```bash
-npm test            # 38 tests: care scenarios, guard, safety, bandit, scheduler, Muse tool loop (mocked API), HTTP
+npm test            # 51 tests: care scenarios, guard, safety, bandit, scheduler, Muse tool loop (mocked API), HTTP, account security
 npm run build && npm run e2e   # real Chromium + fake microphone, family and tablet side by side
 META_API_KEY=... npm run eval:live   # care scenarios against real Muse Spark, judged by Muse Spark
 ```
@@ -136,6 +163,9 @@ The end-to-end run checks:
 - An urgent alert reaching the family app live.
 - A reminder confirmed by tapping "I took it".
 - That "Where is Frank?" never produces a death announcement.
+- Pairing a tablet by QR code, with the family screen confirming the connection live.
+- Setting up two-step verification.
+- Inviting a family member by QR code, and that person signing up on their phone and joining.
 
 ---
 

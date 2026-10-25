@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { ApiError, family, tokens } from '../api';
+import { ApiError, family, pendingInvite } from '../api';
 import { Auth } from './Auth';
 import { Setup } from './Setup';
 import { Home } from './Home';
@@ -57,24 +57,31 @@ const TABS = [
 
 export function Family({ path }: { path: string }) {
   const [me, setMe] = useState<Me | null>(null);
-  const [authed, setAuthed] = useState(!!tokens.family);
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const [version, setVersion] = useState(0);
   const [toasts, setToasts] = useState<{ id: number; text: string; level: string }[]>([]);
+  // Messages handed back by Google/Apple/Facebook sign-in, carried in the URL fragment.
+  const [authError] = useState(() => decodeURIComponent(location.hash.match(/[?&]authError=([^&]+)/)?.[1] ?? ''));
+  const [challenge] = useState(() => decodeURIComponent(location.hash.match(/[?&]twoStep=([^&]+)/)?.[1] ?? ''));
 
   const loadMe = useCallback(async () => {
     try {
       setMe(await family.get<Me>('/me'));
+      setAuthed(true);
+      // Finish joining a family circle that started before signing in.
+      const invite = pendingInvite.get();
+      if (invite) location.hash = `#/join?invite=${invite}`;
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) {
-        tokens.family = null;
-        setAuthed(false);
-      }
+      if (e instanceof ApiError && e.status === 401) setAuthed(false);
     }
   }, []);
 
   useEffect(() => {
-    if (authed) void loadMe();
-  }, [authed, loadMe]);
+    void loadMe();
+    if (/[?&](authError|twoStep|linked)=/.test(location.hash) && !location.hash.includes('/settings')) {
+      history.replaceState(null, '', location.pathname + location.hash.replace(/\?.*$/, ''));
+    }
+  }, [loadMe]);
 
   const toast = useCallback((text: string, level: 'urgent' | 'fyi' | 'ok' = 'ok') => {
     const id = Date.now() + Math.random();
@@ -98,6 +105,16 @@ export function Family({ path }: { path: string }) {
         bump();
       });
       for (const type of ['conversation_processed', 'story', 'nightly', 'memory_updated']) es.addEventListener(type, bump);
+      es.addEventListener('device_paired', (e) => {
+        const { name } = JSON.parse((e as MessageEvent).data) as { name: string };
+        toast(`Tablet connected: ${name}.`);
+        bump();
+      });
+      es.addEventListener('member_joined', (e) => {
+        const { name } = JSON.parse((e as MessageEvent).data) as { name: string };
+        toast(`${name} joined the family circle.`);
+        bump();
+      });
       es.onerror = () => {
         es?.close();
         retry = setTimeout(connect, 5000);
@@ -110,14 +127,15 @@ export function Family({ path }: { path: string }) {
     };
   }, [pid, toast]);
 
-  if (!authed) return <Auth onAuthed={() => setAuthed(true)} />;
+  if (authed === null) return <div className="family-loading" />;
+  if (!authed) return <Auth onAuthed={() => void loadMe()} initialError={authError} initialChallenge={challenge} />;
   if (!me) return <div className="family-loading" />;
   if (!pid) return <Setup onCreated={() => void loadMe()} />;
 
   const name = me.patients[0].preferred_name;
   const ctx: Ctx = { me, pid, name, version, refresh: () => setVersion((v) => v + 1), toast };
   const screen =
-    path === '/family/book' ? <Book /> : path === '/family/memories' ? <Memories /> : path === '/family/insights' ? <Insights /> : path === '/family/settings' ? <Settings onSignOut={() => setAuthed(false)} /> : <Home />;
+    path === '/family/book' ? <Book /> : path === '/family/memories' ? <Memories /> : path === '/family/insights' ? <Insights /> : path === '/family/settings' ? <Settings onSignOut={() => (setMe(null), setAuthed(false))} /> : <Home />;
 
   return (
     <FamilyCtx.Provider value={ctx}>

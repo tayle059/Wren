@@ -9,7 +9,10 @@ import { heartbeat } from '../jobs/scheduler.ts';
 import { mediaUrl } from '../media.ts';
 import { speechToText, sttMode } from '../stt.ts';
 import { localParts, nowIso, partOfDay, spokenDate, spokenTime } from '../util/time.ts';
-import { bearer, fileField, HttpError, sse, textField, type Body } from './common.ts';
+import { bearer, fileField, HttpError, requestMeta, sse, textField, type Body } from './common.ts';
+import { allow } from '../security/limits.ts';
+import { audit, describeAgent } from '../security/audit.ts';
+import { toFamily } from '../events.ts';
 import { hasMeta } from '../config.ts';
 
 type Env = { Variables: { device: Device } };
@@ -17,10 +20,16 @@ type Env = { Variables: { device: Device } };
 export const deviceRoutes = new Hono<Env>();
 
 deviceRoutes.post('/pair', async (c) => {
+  const meta = requestMeta(c);
+  // A 6-digit code is guessable without a limit; 10 tries per 10 minutes per address.
+  if (!allow(`pair:${meta.ip}`, 10, 600_000)) return c.json({ error: 'Too many tries. Please wait a few minutes and try again.' }, 429);
   const { code } = await c.req.json<{ code: string }>();
-  const paired = redeemPairingCode(String(code ?? ''));
+  const paired = redeemPairingCode(String(code ?? ''), describeAgent(meta.userAgent));
   if (!paired) return c.json({ error: 'That code didn’t work. Ask your family for a new one.' }, 400);
-  return c.json({ token: paired.token, patientId: paired.patientId });
+  const patient = getPatient(paired.patientId)!;
+  if (paired.createdBy) audit(paired.createdBy, 'tablet_connected', `${describeAgent(meta.userAgent)} for ${patient.preferred_name}`, meta);
+  toFamily(paired.patientId, { type: 'device_paired', deviceId: paired.deviceId, name: describeAgent(meta.userAgent) });
+  return c.json({ token: paired.token, patientId: paired.patientId, deviceId: paired.deviceId });
 });
 
 deviceRoutes.use('*', async (c, next) => {
@@ -41,6 +50,7 @@ deviceRoutes.get('/state', (c) => {
     p.id,
   );
   return c.json({
+    deviceId: device.id,
     patient: {
       name: p.preferred_name,
       companionName: p.companion_name,

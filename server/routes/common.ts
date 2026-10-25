@@ -1,13 +1,52 @@
 import type { Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { subscribe, type KEvent } from '../events.ts';
+import { SESSION_DAYS } from '../auth.ts';
+import type { RequestMeta } from '../security/audit.ts';
 
 export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
+/** Device tokens: an Authorization header, or ?token= for EventSource, which can't set headers. */
 export function bearer(c: Context): string | undefined {
   const h = c.req.header('Authorization');
   if (h?.startsWith('Bearer ')) return h.slice(7);
-  return c.req.query('token') ?? undefined; // EventSource can't set headers
+  return c.req.query('token') ?? undefined;
+}
+
+// ---------- Family sessions live in an HttpOnly cookie ----------
+// Scripts on the page can't read it (so a script injection can't steal it), and
+// SameSite=Lax keeps other sites from making requests with it.
+
+export const SESSION_COOKIE = 'kindred_session';
+
+export const isHttps = (c: Context) =>
+  c.req.url.startsWith('https:') || c.req.header('x-forwarded-proto') === 'https';
+
+export function sessionToken(c: Context): string | undefined {
+  const h = c.req.header('Authorization');
+  if (h?.startsWith('Bearer ')) return h.slice(7); // API clients and tests
+  return getCookie(c, SESSION_COOKIE);
+}
+
+export function setSessionCookie(c: Context, token: string) {
+  setCookie(c, SESSION_COOKIE, token, {
+    httpOnly: true,
+    secure: isHttps(c),
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: SESSION_DAYS * 86400,
+  });
+}
+
+export function clearSessionCookie(c: Context) {
+  deleteCookie(c, SESSION_COOKIE, { path: '/', secure: isHttps(c) });
+}
+
+export function requestMeta(c: Context): RequestMeta {
+  const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
+  const incoming = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming;
+  return { ip: forwarded || incoming?.socket?.remoteAddress || 'local', userAgent: c.req.header('user-agent') ?? '' };
 }
 
 export function sse(c: Context, channel: string, hello: KEvent) {

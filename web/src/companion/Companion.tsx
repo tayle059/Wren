@@ -7,6 +7,7 @@ import { unlockAudio } from './speech';
 import './companion.css';
 
 interface DeviceState {
+  deviceId: string;
   patient: { name: string; companionName: string; timezone: string; speechPatienceMs: number; hasExitPin: boolean };
   voiceNotes: { id: string; from: string; url: string }[];
   stt: SttMode;
@@ -51,6 +52,8 @@ export function Companion() {
   const [awake, setAwake] = useState(false);
   const [offline, setOffline] = useState(false);
   const conv = useRef<Conversation | null>(null);
+  const stateRef = useRef<DeviceState | null>(null);
+  stateRef.current = state;
   const demo = useMemo(() => /[?&]demo\b/.test(location.hash + location.search), []);
 
   const load = useCallback(async () => {
@@ -105,6 +108,14 @@ export function Companion() {
       es.addEventListener('invite', (e) => {
         const { invite } = JSON.parse((e as MessageEvent).data) as { invite: OpenPlan & { kind: OpenPlan['kind'] } };
         void conv.current?.open({ kind: invite.kind, scheduleItemId: invite.scheduleItemId ?? undefined, calming: invite.calming });
+      });
+      es.addEventListener('unpaired', (e) => {
+        // The family disconnected this tablet from the app.
+        const { deviceId } = JSON.parse((e as MessageEvent).data) as { deviceId: string };
+        if (deviceId === stateRef.current?.deviceId) {
+          tokens.device = null;
+          location.reload();
+        }
       });
       es.addEventListener('voice_note', (e) => {
         const { id } = JSON.parse((e as MessageEvent).data) as { id: string };

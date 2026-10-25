@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { family, tokens } from './api';
+import { family } from './api';
 
 export function Landing() {
   const [busy, setBusy] = useState(false);
@@ -9,8 +9,7 @@ export function Landing() {
     setBusy(true);
     setError('');
     try {
-      const { token } = await family.post<{ token: string }>('/auth/login', { email: 'sarah@kindred.demo', password: 'kindred-demo' });
-      tokens.family = token;
+      await family.post('/auth/login', { email: 'sarah@kindred.demo', password: 'kindred-demo' });
       location.hash = '#/family';
     } catch {
       setError('The demo isn’t loaded on this server yet. Run "npm run seed" first.');

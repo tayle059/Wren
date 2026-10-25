@@ -17,3 +17,20 @@ services:
       # Add your key from https://dev.meta.ai to use Muse Spark and Muse Voice Transcribe.
       - key: META_API_KEY
         sync: false
+      # Optional: "Continue with Google / Apple / Facebook". See the README for how to get these.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY
+        sync: false
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false

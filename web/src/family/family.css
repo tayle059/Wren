@@ -895,3 +895,340 @@ code {
     margin-bottom: 24px;
   }
 }
+
+/* ---------- Sign-in ---------- */
+.social {
+  display: grid;
+  gap: 10px;
+}
+.social-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #1f1f1f;
+  font-weight: 700;
+  text-decoration: none;
+}
+.social-button.apple {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+.social-button.facebook {
+  background: #1877f2;
+  color: #fff;
+  border-color: #1877f2;
+}
+.social-button[aria-disabled='true'] {
+  opacity: 0.55;
+}
+.social-note {
+  margin: 0;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink-3);
+  font-size: 0.88rem;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.strength {
+  display: grid;
+  gap: 6px;
+  margin-top: -6px;
+}
+.strength-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.strength-bar span {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--paper-2);
+}
+.strength[data-score='0'] span[data-on='true'],
+.strength[data-score='1'] span[data-on='true'] {
+  background: var(--urgent);
+}
+.strength[data-score='2'] span[data-on='true'] {
+  background: var(--fyi);
+}
+.strength[data-score='3'] span[data-on='true'],
+.strength[data-score='4'] span[data-on='true'] {
+  background: var(--good);
+}
+.strength-label {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}
+.code-input {
+  font: 700 1.6rem 'Atkinson Hyperlegible', monospace !important;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+.fine-print {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-3);
+}
+.invite-banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+.invite-banner p {
+  margin: 0;
+}
+
+/* ---------- QR & pairing ---------- */
+.qr {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line);
+  flex: none;
+}
+.qr img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.qr-placeholder {
+  width: 60%;
+  height: 60%;
+  border-radius: 8px;
+  background: var(--paper-2);
+}
+.pair-dialog {
+  width: min(560px, 100%);
+}
+.pair-body {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.pair-or {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 0.92rem;
+}
+.pair-or .pair-code {
+  margin-top: 8px;
+}
+.pair-done {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+.pair-check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--good);
+  color: #fff;
+  font-size: 2.2rem;
+  animation: rise 0.4s ease both;
+}
+.center {
+  text-align: center;
+}
+.copy-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.copy-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+/* ---------- Settings sections ---------- */
+.subnav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  padding: 8px 0;
+  background: var(--paper);
+  overflow-x: auto;
+}
+.subnav a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.section-title {
+  margin: 18px 0 0;
+  font-size: 1.6rem;
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.card-head h2 {
+  margin: 0 !important;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.list li:first-child {
+  border-top: 0;
+}
+.list-main {
+  flex: 1;
+  min-width: 180px;
+  display: grid;
+}
+.list .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  flex: none;
+}
+.list .dot[data-on='true'] {
+  background: var(--good);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--good), transparent 80%);
+}
+.avatar,
+.method-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+.method-icon {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.stack {
+  display: grid;
+  gap: 12px;
+}
+.setup-2fa {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.setup-steps {
+  flex: 1;
+  min-width: 240px;
+  display: grid;
+  gap: 10px;
+}
+.secret {
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+}
+.codes {
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--fyi-soft);
+  display: grid;
+  gap: 10px;
+}
+.codes p {
+  margin: 0;
+}
+.code-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  font: 700 1rem 'Atkinson Hyperlegible', monospace;
+}
+.code-grid li {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--card);
+}
+.activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.activity li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.activity li:first-child {
+  border-top: 0;
+}
+.activity li[data-warn='true'] .activity-what b {
+  color: var(--fyi);
+}
+
+@media (max-width: 760px) {
+  .pair-body,
+  .setup-2fa {
+    flex-direction: column;
+    align-items: center;
+    text-align: left;
+  }
+}
+.invite-banner .brand-mark {
+  flex: none;
+}

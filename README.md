@@ -16,7 +16,17 @@ Built on **Meta Muse Spark** (conversation, tool use, vision, nightly reflection
 
 ---
 
-## Try it in two minutes
+## Open it online (one click)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/tayle059/wren)
+
+1. Click the button and sign in to Render with GitHub. The free plan is fine.
+2. Leave `META_API_KEY` blank for now (or paste your key from dev.meta.ai), then click **Deploy Blueprint**.
+3. After about 3 minutes, open the `https://kindred-….onrender.com` address Render shows and click **Try the live demo**.
+
+On the free plan the server sleeps after 15 minutes without visitors (the first visit then takes about a minute to wake), and the demo resets to a fresh week each time it restarts. For a permanent home, use a paid Render plan with a disk, or Railway with a volume (`railway.json` and a `Dockerfile` are included). Set `DATA_DIR` to the disk's path.
+
+## Run it on your computer
 
 ```bash
 npm install
@@ -131,16 +141,16 @@ The end-to-end run checks:
 
 ## Deploying
 
-Any Node 22 host works (Railway, Render, Fly.io, a small VM):
+- **Render:** use the button above (`render.yaml`).
+- **Railway:** "Deploy from GitHub repo" (`railway.json`). Add a volume and set `DATA_DIR` to its mount path.
+- **Anywhere with Docker:** the `Dockerfile` stores data in `/data`.
 
-```bash
-npm ci && npm run build && npm start
-```
+Settings:
+- Set `META_API_KEY` to use Muse Spark and Muse Voice Transcribe.
+- `KINDRED_AUTO_SEED=1` loads the demo family whenever the database is empty.
+- The public address is detected on Render and Railway. Elsewhere, set `PUBLIC_URL`.
 
-- Set `META_API_KEY`, `PUBLIC_URL`, and a persistent `DATA_DIR` volume.
-- Microphones and push notifications need **HTTPS**.
-- On iPhone, family members add Kindred to the Home Screen to receive push alerts.
-- On the tablet, turn on Guided Access (iPad) or screen pinning (Android).
+Microphones and push notifications need **HTTPS**, which all of the above provide. On iPhone, family members add Kindred to the Home Screen to receive push alerts. On the tablet, turn on Guided Access (iPad) or screen pinning (Android).
 
 ## Honest limits
 

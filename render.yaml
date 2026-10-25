@@ -1,0 +1,19 @@
+# One-click deploy on Render: https://render.com/deploy?repo=https://github.com/tayle059/wren
+services:
+  - type: web
+    name: kindred
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/config
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      # Loads Rose's demo world whenever the database is empty. On the free
+      # plan the disk resets on each deploy or restart, so the demo starts fresh.
+      - key: KINDRED_AUTO_SEED
+        value: '1'
+      # Add your key from https://dev.meta.ai to use Muse Spark and Muse Voice Transcribe.
+      - key: META_API_KEY
+        sync: false

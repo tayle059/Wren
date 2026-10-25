@@ -17,7 +17,13 @@ const env = process.env;
 export const config = {
   port: Number(env.PORT ?? 8787),
   dataDir: resolve(env.DATA_DIR ?? './data'),
-  publicUrl: env.PUBLIC_URL ?? `http://localhost:${env.PORT ?? 8787}`,
+  // Render and Railway tell us our public address; fall back to localhost.
+  publicUrl:
+    env.PUBLIC_URL ??
+    env.RENDER_EXTERNAL_URL ??
+    (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : `http://localhost:${env.PORT ?? 8787}`),
+  // Hosted demos start with Rose's world when the database is empty.
+  autoSeed: env.KINDRED_AUTO_SEED === '1',
   meta: {
     apiKey: env.META_API_KEY ?? '',
     base: env.META_API_BASE ?? 'https://api.meta.ai/v1',

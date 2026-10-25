@@ -1,0 +1,698 @@
+/* Companion mode: calm, legible, and oriented in time.
+   The whole screen's light follows the time of day, a quiet orientation cue. */
+
+.companion {
+  --ink: #3b2a1e;
+  --ink-soft: #6b5646;
+  --sky-a: #fbe0c4;
+  --sky-b: #fff7ec;
+  --card: #fffdf9;
+  --core-1: #fffaf2;
+  --core-2: #ffd8a6;
+  --core-3: #f2a16c;
+  --core-4: #de7557;
+  --glow: 255 176 120;
+  --talk: #2f5d50;
+  --talk-ink: #fff;
+  --speed: 1;
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    'orient presence side'
+    'talk talk talk';
+  padding: max(24px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+    max(28px, env(safe-area-inset-left));
+  gap: 12px 24px;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.companion[data-part='afternoon'] {
+  --ink: #213345;
+  --ink-soft: #4a5f73;
+  --sky-a: #cfe5f3;
+  --sky-b: #f7f4ec;
+  --core-2: #ffe1b0;
+  --core-3: #f3a974;
+  --talk: #2e5a7a;
+}
+.companion[data-part='evening'] {
+  --ink: #33284a;
+  --ink-soft: #5d4f74;
+  --sky-a: #dccfee;
+  --sky-b: #f8e6de;
+  --core-2: #ffd3c2;
+  --core-3: #e98c8c;
+  --core-4: #b8607e;
+  --glow: 240 150 170;
+  --talk: #5a3f78;
+}
+.companion[data-part='night'] {
+  --ink: #ece6ff;
+  --ink-soft: #b9b0d8;
+  --sky-a: #1b1f3d;
+  --sky-b: #2b2750;
+  --card: #f6f2ff;
+  --core-1: #fff5e6;
+  --core-2: #f7d9b0;
+  --core-3: #c99a7a;
+  --core-4: #8b6a8f;
+  --glow: 200 170 240;
+  --talk: #6a5aa8;
+}
+/* Calm mode: everything warms to amber and slows down. */
+.companion[data-mode='calm'] {
+  --core-1: #fff8e8;
+  --core-2: #ffe1a1;
+  --core-3: #f4b24e;
+  --core-4: #d98a2b;
+  --glow: 255 190 90;
+  --speed: 1.7;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(120% 80% at 50% 110%, rgb(var(--glow) / 0.28), transparent 60%),
+    linear-gradient(180deg, var(--sky-a), var(--sky-b));
+  transition: background 3s ease;
+}
+.companion[data-mode='calm'] .sky {
+  background:
+    radial-gradient(120% 90% at 50% 100%, rgb(255 196 110 / 0.45), transparent 65%),
+    linear-gradient(180deg, color-mix(in oklab, var(--sky-a), #f7c98a 35%), var(--sky-b));
+}
+
+/* ---------- Orientation ---------- */
+
+.orientation {
+  grid-area: orient;
+  align-self: center;
+  line-height: 1.1;
+}
+.orientation p {
+  margin: 0;
+}
+.orientation-greeting {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(2.2rem, 4.2vw, 3.6rem);
+  font-weight: 400;
+}
+.orientation-greeting strong {
+  display: block;
+  font-size: clamp(3.4rem, 7vw, 6.2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.orientation-date {
+  margin-top: 0.6em !important;
+  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  color: var(--ink-soft);
+}
+.orientation-time {
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  font-weight: 700;
+  margin-top: 0.15em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Presence (orb + captions) ---------- */
+
+.presence {
+  grid-area: presence;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  text-align: center;
+}
+.phase-hint {
+  min-height: 1.6em;
+  margin: 18px 0 6px;
+  font-size: 1.35rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+.captions {
+  max-width: 34ch;
+  min-height: 6.5em;
+}
+.caption {
+  margin: 0;
+  font-size: clamp(1.7rem, 2.7vw, 2.5rem);
+  line-height: 1.32;
+  font-weight: 700;
+  animation: fade-up 0.5s ease both;
+  text-wrap: balance;
+}
+.heard {
+  margin: 0.6em 0 0;
+  font-size: 1.4rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.now-playing {
+  margin: 0.6em 0 0;
+  font-size: 1.6rem;
+}
+
+/* The orb */
+.orb {
+  --size: clamp(200px, 26vw, 320px);
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  border: 0;
+  padding: 0;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(calc(1 + var(--level) * 0.14));
+  transition: transform 0.12s linear;
+}
+.orb:focus-visible {
+  outline: 4px solid var(--talk);
+  outline-offset: 12px;
+}
+.orb > span {
+  position: absolute;
+  border-radius: 50%;
+}
+.orb-halo {
+  inset: -38%;
+  background: radial-gradient(circle, rgb(var(--glow) / 0.55) 0%, rgb(var(--glow) / 0.18) 40%, transparent 68%);
+  animation: breathe-halo calc(6s * var(--speed)) ease-in-out infinite;
+}
+.orb-ring {
+  inset: -7%;
+  border: 3px solid rgb(var(--glow) / 0.0);
+  transition: border-color 0.6s ease;
+}
+.orb-core {
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 38% 32%, var(--core-1) 0%, var(--core-2) 28%, var(--core-3) 64%, var(--core-4) 100%);
+  box-shadow:
+    0 30px 80px -20px rgb(var(--glow) / 0.65),
+    inset 0 -18px 40px rgb(0 0 0 / 0.08);
+  animation: breathe calc(6s * var(--speed)) ease-in-out infinite;
+  transition: background 1.2s ease;
+}
+.orb-swirl {
+  inset: -20%;
+  background: conic-gradient(from 0deg, transparent 0 20%, rgb(255 255 255 / 0.35) 30%, transparent 45% 70%, rgb(255 255 255 / 0.22) 82%, transparent 92%);
+  animation: spin calc(14s * var(--speed)) linear infinite;
+  mix-blend-mode: soft-light;
+}
+.orb-shine {
+  width: 34%;
+  height: 22%;
+  left: 20%;
+  top: 14%;
+  background: radial-gradient(ellipse, rgb(255 255 255 / 0.85), transparent 70%);
+  filter: blur(4px);
+}
+
+.orb[data-phase='inviting'] .orb-core {
+  animation: invite calc(1.8s * var(--speed)) ease-in-out infinite;
+}
+.orb[data-phase='inviting'] .orb-halo {
+  animation: invite-halo calc(1.8s * var(--speed)) ease-in-out infinite;
+}
+.orb[data-phase='speaking'] .orb-core {
+  animation: speak calc(1.4s * var(--speed)) ease-in-out infinite;
+}
+.orb[data-phase='listening'] .orb-ring,
+.orb[data-phase='hearing'] .orb-ring {
+  border-color: rgb(var(--glow) / 0.75);
+  animation: ring calc(2.4s * var(--speed)) ease-in-out infinite;
+}
+.orb[data-phase='thinking'] .orb-swirl {
+  animation-duration: calc(2.2s * var(--speed));
+}
+.orb[data-phase='thinking'] .orb-core {
+  animation: breathe calc(2.2s * var(--speed)) ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(0.97);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+@keyframes breathe-halo {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+@keyframes invite {
+  0%,
+  100% {
+    transform: scale(0.98);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.06);
+    filter: brightness(1.12);
+  }
+}
+@keyframes invite-halo {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+@keyframes speak {
+  0%,
+  100% {
+    transform: scale(0.99);
+  }
+  30% {
+    transform: scale(1.035);
+  }
+  60% {
+    transform: scale(1.005);
+  }
+}
+@keyframes ring {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.35;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- Side cards ---------- */
+
+.photo-card {
+  grid-area: side;
+  align-self: center;
+  justify-self: center;
+  margin: 0;
+  width: min(100%, 420px);
+  padding: 16px 16px 20px;
+  background: #fffdf8;
+  border-radius: 6px;
+  box-shadow: 0 30px 60px -24px rgb(30 20 10 / 0.45), 0 2px 6px rgb(30 20 10 / 0.12);
+  transform: rotate(-2deg);
+  animation: photo-in 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+.photo-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 2px;
+  background: #eee;
+}
+.photo-card figcaption {
+  margin-top: 14px;
+  text-align: center;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.9rem;
+  color: #3b2a1e;
+}
+@keyframes photo-in {
+  from {
+    opacity: 0;
+    transform: translateX(60px) rotate(6deg) scale(0.92);
+  }
+}
+
+.reminder-card {
+  grid-area: side;
+  align-self: center;
+  z-index: 2;
+  background: var(--card);
+  color: #2a2018;
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 30px 70px -28px rgb(30 20 10 / 0.5);
+  text-align: center;
+  animation: fade-up 0.6s ease both;
+}
+.reminder-card img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 16px;
+  background: #f1ece4;
+}
+.reminder-card h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 2.3rem;
+  margin: 14px 0 18px;
+}
+.reminder-buttons {
+  display: grid;
+  gap: 14px;
+}
+
+/* ---------- Buttons ---------- */
+
+.big-button {
+  min-height: 88px;
+  padding: 0 40px;
+  border-radius: 999px;
+  border: 0;
+  font: 700 clamp(1.5rem, 2.4vw, 2rem) / 1 'Atkinson Hyperlegible', system-ui, sans-serif;
+  cursor: pointer;
+  color: #fff;
+  background: #2f5d50;
+  box-shadow: 0 12px 30px -12px rgb(0 0 0 / 0.35);
+  transition:
+    transform 0.15s ease,
+    filter 0.2s ease;
+}
+.big-button:active {
+  transform: scale(0.97);
+}
+.big-button:disabled {
+  opacity: 0.45;
+}
+.big-button.yes {
+  background: #2f7d4f;
+}
+.big-button.soft {
+  background: #ece5da;
+  color: #3b2a1e;
+  box-shadow: none;
+}
+
+.talk-bar {
+  grid-area: talk;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.big-button.talk {
+  min-width: min(560px, 90vw);
+  min-height: 104px;
+  background: var(--talk);
+  color: var(--talk-ink);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+.big-button.talk[data-active='true'] {
+  filter: saturate(0.6) brightness(1.08);
+}
+.mic-error,
+.offline-note {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- Waking, exiting, loading ---------- */
+
+.wake {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  border: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 28px;
+  cursor: pointer;
+  color: var(--ink);
+  background: color-mix(in oklab, var(--sky-b), transparent 8%);
+  backdrop-filter: blur(6px);
+  font: 700 2.2rem 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+.wake-orb {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, var(--core-1), var(--core-2) 30%, var(--core-3) 66%, var(--core-4));
+  box-shadow: 0 0 120px rgb(var(--glow) / 0.7);
+  animation: breathe 5s ease-in-out infinite;
+}
+.exit-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 90px;
+  height: 90px;
+  z-index: 5;
+}
+.exit-dialog {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.35);
+}
+.exit-card {
+  background: #fff;
+  color: #222;
+  border-radius: 20px;
+  padding: 28px;
+  width: min(420px, 90vw);
+  font-size: 1.2rem;
+}
+.exit-card input {
+  font-size: 2rem;
+  width: 100%;
+  padding: 10px;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+.exit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.exit-actions button {
+  font-size: 1.1rem;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+}
+.exit-actions .danger {
+  background: #b3261e;
+  color: #fff;
+  border-color: #b3261e;
+}
+.companion-loading {
+  grid-column: 1 / -1;
+  place-self: center;
+  font-size: 1.6rem;
+}
+
+/* ---------- Pairing ---------- */
+
+.pairing {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(180deg, #fbe0c4, #fff7ec);
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  color: #3b2a1e;
+}
+.pairing-card {
+  width: min(560px, 100%);
+  text-align: center;
+  display: grid;
+  gap: 18px;
+}
+.pairing-card h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 2.6rem;
+  margin: 0;
+}
+.pairing-card p {
+  font-size: 1.3rem;
+  line-height: 1.45;
+  margin: 0;
+}
+.pairing-code {
+  font: 700 3.4rem 'Atkinson Hyperlegible', monospace;
+  letter-spacing: 0.35em;
+  text-align: center;
+  padding: 16px 0 16px 0.35em;
+  border-radius: 18px;
+  border: 3px solid #e0cdb8;
+  background: #fff;
+  color: #3b2a1e;
+}
+.pairing-error {
+  color: #b3261e !important;
+  font-weight: 700;
+}
+.pairing-back {
+  color: #6b5646;
+  font-size: 1.1rem;
+}
+
+/* ---------- Demo director (operators only) ---------- */
+
+.demo-director {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 8;
+  width: min(380px, calc(100vw - 32px));
+  padding: 12px;
+  border-radius: 14px;
+  background: rgb(20 18 28 / 0.86);
+  color: #f3f0ff;
+  font: 14px/1.3 system-ui, sans-serif;
+  backdrop-filter: blur(8px);
+}
+.demo-director header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.demo-director header span {
+  flex: 1;
+  opacity: 0.7;
+  font-size: 12px;
+}
+.demo-director header button {
+  background: none;
+  border: 0;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.demo-director form {
+  display: flex;
+  gap: 6px;
+}
+.demo-director input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 0;
+  font-size: 14px;
+}
+.demo-director form button,
+.demo-chips button,
+.demo-toggle {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.25);
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.demo-toggle {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 8;
+  background: rgb(20 18 28 / 0.6);
+}
+
+/* ---------- Portrait (phones and tablets standing up) ---------- */
+
+@media (max-aspect-ratio: 1/1) {
+  .companion {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      'orient'
+      'presence'
+      'talk';
+    text-align: center;
+    gap: 8px;
+  }
+  .orientation-greeting strong {
+    display: inline;
+  }
+  .orientation-greeting {
+    font-size: clamp(1.8rem, 6vw, 3rem);
+  }
+  .orientation-date,
+  .orientation-time {
+    display: inline;
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+  }
+  .orientation-time::before {
+    content: ' · ';
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+  .orb {
+    --size: clamp(150px, 42vw, 280px);
+  }
+  .photo-card,
+  .reminder-card {
+    position: absolute;
+    left: 50%;
+    bottom: calc(150px + env(safe-area-inset-bottom));
+    width: min(88vw, 420px);
+    translate: -50% 0;
+    z-index: 3;
+  }
+  .big-button.talk {
+    min-width: 0;
+    width: 100%;
+    min-height: 92px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb *,
+  .wake-orb,
+  .caption,
+  .photo-card {
+    animation: none !important;
+  }
+}

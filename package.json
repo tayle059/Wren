@@ -1,0 +1,41 @@
+{
+  "name": "kindred",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kindred: an AI companion for people living with dementia, and a window for the families who love them. Built on Meta Muse models.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "NODE_OPTIONS=--disable-warning=ExperimentalWarning KINDRED_DEV=1 tsx watch server/index.ts",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning NODE_ENV=production tsx server/index.ts",
+    "seed": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx server/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "NODE_OPTIONS=--disable-warning=ExperimentalWarning DATA_DIR=./data-test tsx --test tests/*.test.ts",
+    "e2e": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx e2e/run.ts",
+    "eval:live": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx tests/live-eval.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.14",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tsx": "4.23.15",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@types/web-push": "3.6.4",
+    "@vitejs/plugin-react": "6.1.2",
+    "concurrently": "9.2.5",
+    "playwright-core": "1.64.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

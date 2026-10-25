@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd3f0"/><stop offset="1" stop-color="#e8f5fb"/></linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc36b"/><stop offset="1" stop-color="#4f9a45"/></linearGradient>
+  </defs>
+  <rect width="480" height="360" fill="url(#sky)"/>
+  <circle cx="400" cy="70" r="34" fill="#fff3b0"/>
+  <rect y="250" width="480" height="110" fill="url(#grass)"/>
+  <path d="M0 262 Q120 250 240 262 T480 258" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>
+  <rect x="40" y="170" width="70" height="90" fill="none" stroke="#fff" stroke-width="6"/>
+  <path d="M40 170 l20 -12 h70 l-20 12" fill="none" stroke="#fff" stroke-width="4" opacity=".8"/>
+  <!-- Leo -->
+  <path d="M190 360 C190 270 210 236 250 232 C290 236 310 270 310 360Z" fill="#e2463f"/>
+  <path d="M232 236 L250 262 L268 236" fill="#fff"/>
+  <text x="250" y="320" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#fff" text-anchor="middle">12</text>
+  <rect x="236" y="196" width="28" height="42" rx="12" fill="#c98a5e"/>
+  <ellipse cx="250" cy="160" rx="50" ry="56" fill="#d99a6c"/>
+  <path d="M198 150 C196 98 304 92 302 146 C292 120 264 116 250 124 C236 116 210 120 198 150Z" fill="#5b3a22"/>
+  <circle cx="232" cy="166" r="6" fill="#2b1d14"/><circle cx="268" cy="166" r="6" fill="#2b1d14"/>
+  <path d="M230 190 Q250 208 270 190" stroke="#7a3b26" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <circle cx="218" cy="184" r="9" fill="#e9876f" opacity=".5"/><circle cx="282" cy="184" r="9" fill="#e9876f" opacity=".5"/>
+  <!-- ball -->
+  <circle cx="370" cy="300" r="36" fill="#fff" stroke="#333" stroke-width="3"/>
+  <path d="M370 282 l14 10 -5 17 h-18 l-5 -17z" fill="#333"/>
+  <path d="M370 264 v18 M384 292 l20 -6 M379 309 l10 16 M361 309 l-10 16 M356 292 l-20 -6" stroke="#333" stroke-width="3"/>
+</svg>

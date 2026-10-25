@@ -1,0 +1,6 @@
+node_modules/
+dist/
+data/
+.env
+e2e/artifacts/
+data-test/

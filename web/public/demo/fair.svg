@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360">
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f7a"/><stop offset="1" stop-color="#e48a6b"/></linearGradient></defs>
+  <rect width="480" height="360" fill="url(#sky)"/>
+  <g transform="translate(330 170)" stroke="#f4efe6" stroke-width="3">
+    <circle r="110" fill="none"/><circle r="12" fill="#f4efe6"/>
+    <path d="M0 -110 V110 M-110 0 H110 M-78 -78 L78 78 M78 -78 L-78 78"/>
+  </g>
+  <g fill="#f2c14e"><circle cx="330" cy="60" r="10"/><circle cx="440" cy="170" r="10"/><circle cx="330" cy="280" r="10"/><circle cx="220" cy="170" r="10"/><circle cx="408" cy="92" r="9"/><circle cx="408" cy="248" r="9"/><circle cx="252" cy="248" r="9"/><circle cx="252" cy="92" r="9"/></g>
+  <path d="M300 360 L330 170 L360 360" stroke="#f4efe6" stroke-width="6" fill="none"/>
+  <path d="M0 300 h480 v60 h-480z" fill="#2d2a40"/>
+  <path d="M20 300 l50 -60 l50 60z" fill="#e2463f"/><path d="M20 300 l50 -60 l50 60" stroke="#fff" stroke-width="3" fill="none"/>
+  <path d="M0 120 q60 30 120 0 t120 0" stroke="#f4efe6" stroke-width="2" fill="none"/>
+  <g fill="#ffe08a"><circle cx="20" cy="126" r="5"/><circle cx="60" cy="136" r="5"/><circle cx="100" cy="128" r="5"/><circle cx="140" cy="122" r="5"/><circle cx="180" cy="134" r="5"/><circle cx="220" cy="126" r="5"/></g>
+  <!-- dancing couple silhouette -->
+  <g fill="#1d1a2c"><circle cx="150" cy="232" r="12"/><circle cx="176" cy="226" r="12"/>
+  <path d="M140 300 l6 -56 h12 l10 56z"/><path d="M164 300 l6 -62 h14 l2 62z"/><path d="M156 256 l20 -10" stroke="#1d1a2c" stroke-width="6"/></g>
+</svg>

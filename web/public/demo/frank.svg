@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d9a4"/><stop offset="1" stop-color="#e6b979"/></linearGradient>
+  <filter id="sepia"><feColorMatrix type="matrix" values=".9 .2 .1 0 0  .3 .75 .1 0 0  .2 .2 .55 0 0  0 0 0 1 0"/></filter></defs>
+  <g filter="url(#sepia)">
+  <rect width="480" height="360" fill="url(#bg)"/>
+  <rect y="250" width="480" height="110" fill="#b88d4f"/>
+  <!-- tractor -->
+  <rect x="320" y="200" width="110" height="50" rx="6" fill="#3f8a3c"/><rect x="380" y="160" width="40" height="45" fill="#3f8a3c"/>
+  <circle cx="400" cy="262" r="34" fill="#333"/><circle cx="400" cy="262" r="14" fill="#f2c14e"/>
+  <circle cx="335" cy="270" r="20" fill="#333"/><circle cx="335" cy="270" r="8" fill="#f2c14e"/>
+  <rect x="330" y="176" width="8" height="26" fill="#555"/>
+  <!-- Frank -->
+  <path d="M120 360 C120 268 150 240 200 236 C250 240 280 268 280 360Z" fill="#b5463c"/>
+  <path d="M120 300 h160 M120 330 h160 M160 240 v120 M200 236 v124 M240 240 v120" stroke="#7e2a24" stroke-width="5" opacity=".6"/>
+  <rect x="186" y="198" width="28" height="44" rx="12" fill="#d8a57f"/>
+  <ellipse cx="200" cy="160" rx="46" ry="52" fill="#e3b08a"/>
+  <path d="M150 140 C150 96 250 92 252 140 L260 146 L142 146Z" fill="#2f5d8a"/>
+  <rect x="140" y="140" width="122" height="12" rx="6" fill="#244a6e"/>
+  <circle cx="184" cy="170" r="5" fill="#3a2a1f"/><circle cx="216" cy="170" r="5" fill="#3a2a1f"/>
+  <path d="M182 194 Q200 210 218 194" stroke="#8a4b37" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M176 160 l14 -2 M210 158 l14 2" stroke="#7b7b7b" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <rect x="8" y="8" width="464" height="344" fill="none" stroke="#fff" stroke-width="10" opacity=".5"/>
+</svg>

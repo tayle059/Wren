@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360">
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9c784"/><stop offset="1" stop-color="#fde7c5"/></linearGradient></defs>
+  <rect width="480" height="360" fill="url(#sky)"/>
+  <circle cx="90" cy="90" r="40" fill="#fff1c2"/>
+  <path d="M0 220 Q120 180 240 210 T480 200 V360 H0Z" fill="#a7c76a"/>
+  <path d="M0 260 Q160 230 300 255 T480 250 V360 H0Z" fill="#86ad4f"/>
+  <path d="M0 300 h480 M0 320 h480 M0 340 h480" stroke="#6f9440" stroke-width="3" opacity=".5"/>
+  <!-- barn -->
+  <path d="M250 250 V170 L310 120 L370 170 V250Z" fill="#b8352d"/>
+  <path d="M240 172 L310 112 L380 172" stroke="#f4efe6" stroke-width="8" fill="none"/>
+  <rect x="290" y="190" width="40" height="60" fill="#7c2420"/><path d="M290 190 l40 60 M330 190 l-40 60" stroke="#f4efe6" stroke-width="4"/>
+  <rect x="298" y="140" width="24" height="20" fill="#f4efe6"/>
+  <!-- silo -->
+  <rect x="380" y="140" width="36" height="110" fill="#c9c3b4"/><path d="M380 140 q18 -30 36 0" fill="#9b9483"/>
+  <!-- tree & cows -->
+  <rect x="140" y="200" width="10" height="40" fill="#6b4a2b"/><circle cx="145" cy="190" r="34" fill="#4f8a3b"/>
+  <ellipse cx="200" cy="280" rx="26" ry="14" fill="#fff"/><circle cx="182" cy="278" r="7" fill="#333"/><circle cx="210" cy="274" r="6" fill="#333"/>
+  <ellipse cx="80" cy="300" rx="26" ry="14" fill="#fff"/><circle cx="96" cy="296" r="7" fill="#333"/>
+</svg>

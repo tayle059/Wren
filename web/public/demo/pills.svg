@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360">
+  <rect width="480" height="360" fill="#eaf2f7"/>
+  <rect x="40" y="120" width="400" height="140" rx="22" fill="#5b8fd1"/>
+  <g font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#fff" text-anchor="middle">
+    <text x="82" y="112" fill="#355d8f">S</text><text x="138" y="112" fill="#355d8f">M</text><text x="194" y="112" fill="#355d8f">T</text><text x="250" y="112" fill="#355d8f">W</text><text x="306" y="112" fill="#355d8f">T</text><text x="362" y="112" fill="#355d8f">F</text><text x="418" y="112" fill="#355d8f">S</text>
+  </g>
+  <g fill="#cfe0f5"><rect x="58" y="138" width="48" height="104" rx="10"/><rect x="114" y="138" width="48" height="104" rx="10"/><rect x="170" y="138" width="48" height="104" rx="10"/><rect x="226" y="138" width="48" height="104" rx="10"/><rect x="282" y="138" width="48" height="104" rx="10"/><rect x="338" y="138" width="48" height="104" rx="10"/><rect x="394" y="138" width="48" height="104" rx="10"/></g>
+  <g><ellipse cx="250" cy="176" rx="14" ry="8" fill="#fff"/><rect x="238" y="196" width="26" height="12" rx="6" fill="#f2c14e"/><circle cx="250" cy="224" r="8" fill="#e98aa7"/></g>
+  <rect x="222" y="132" width="56" height="116" rx="12" fill="none" stroke="#f2c14e" stroke-width="6"/>
+  <text x="240" y="310" font-family="Arial, sans-serif" font-size="28" fill="#355d8f" text-anchor="middle">Today's box</text>
+</svg>

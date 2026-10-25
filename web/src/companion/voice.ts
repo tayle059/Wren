@@ -18,16 +18,6 @@ const BARGE_IN_MS = 380; // stricter while the companion is speaking
 const MIN_UTTERANCE_MS = 350;
 const MAX_UTTERANCE_MS = 30000;
 
-const WORKLET = `
-class Capture extends AudioWorkletProcessor {
-  process(inputs) {
-    const ch = inputs[0] && inputs[0][0];
-    if (ch) this.port.postMessage(ch.slice(0));
-    return true;
-  }
-}
-registerProcessor('kindred-capture', Capture);
-`;
 
 export class Listener {
   private ctx: AudioContext | null = null;
@@ -64,8 +54,8 @@ export class Listener {
     this.frameLen = Math.round((this.rate * FRAME_MS) / 1000);
     const source = ctx.createMediaStreamSource(this.stream);
     try {
-      const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
-      await ctx.audioWorklet.addModule(url);
+      // Served as a file so the page's Content Security Policy can stay strict.
+      await ctx.audioWorklet.addModule('/capture-worklet.js');
       const node = new AudioWorkletNode(ctx, 'kindred-capture');
       node.port.onmessage = (e) => this.feed(e.data as Float32Array);
       source.connect(node);

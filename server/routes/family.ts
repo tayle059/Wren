@@ -1,17 +1,8 @@
 // API for family members. Every patient-scoped route checks membership first.
 import { Hono } from 'hono';
-import {
-  canAccessPatient,
-  checkLogin,
-  createPairingCode,
-  createSession,
-  createUser,
-  endSession,
-  hashSecret,
-  newId,
-  userForToken,
-  type User,
-} from '../auth.ts';
+import { randomBytes } from 'node:crypto';
+import { canAccessPatient, createPairingCode, hashSecret, newId, sha256Hex, userForToken, type User } from '../auth.ts';
+import { config } from '../config.ts';
 import { db } from '../db.ts';
 import { getPatient, memoryItems, todaysSchedule, type Alert, type MemoryItem, type Patient } from '../domain.ts';
 import { ACTIVITY_LABELS, ensureStats, stats } from '../adapt/bandit.ts';
@@ -22,55 +13,29 @@ import { describePhoto } from '../jobs/photos.ts';
 import { listenerCount, toDevice } from '../events.ts';
 import { mediaUrl, saveMedia } from '../media.ts';
 import { saveSubscription, vapidPublicKey } from '../push.ts';
-import { localParts, localDayRangeUtc, nowIso } from '../util/time.ts';
-import { bearer, fileField, HttpError, sse, textField, type Body } from './common.ts';
+import { localParts, localDayRangeUtc, now, nowIso } from '../util/time.ts';
+import { fileField, HttpError, requestMeta, sessionToken, sse, textField, type Body } from './common.ts';
+import { audit, describeAgent } from '../security/audit.ts';
 
 type Env = { Variables: { user: User; patient: Patient } };
 
 export const familyRoutes = new Hono<Env>();
 
-// ---------- Accounts ----------
-
-familyRoutes.post('/auth/signup', async (c) => {
-  const { email, name, password } = await c.req.json<{ email: string; name: string; password: string }>();
-  if (!email?.includes('@') || !name?.trim() || (password ?? '').length < 8) {
-    return c.json({ error: 'Please enter your name, an email, and a password of at least 8 characters.' }, 400);
-  }
-  if (db().get('SELECT 1 FROM users WHERE email = ?', email.trim().toLowerCase())) {
-    return c.json({ error: 'That email already has an account. Try signing in.' }, 409);
-  }
-  const user = createUser(email, name, password);
-  return c.json({ token: createSession(user.id), user });
-});
-
-familyRoutes.post('/auth/login', async (c) => {
-  const { email, password } = await c.req.json<{ email: string; password: string }>();
-  const user = checkLogin(email ?? '', password ?? '');
-  if (!user) return c.json({ error: 'That email and password don’t match.' }, 401);
-  return c.json({ token: createSession(user.id), user });
-});
-
+// Every family route needs a signed-in session (sign-in itself lives in account.ts).
 familyRoutes.use('*', async (c, next) => {
-  if (c.req.path.includes('/auth/signup') || c.req.path.includes('/auth/login')) return next();
-  const user = userForToken(bearer(c));
+  const user = userForToken(sessionToken(c));
   if (!user) return c.json({ error: 'Please sign in.' }, 401);
   c.set('user', user);
   await next();
 });
 
-familyRoutes.post('/auth/logout', (c) => {
-  const token = bearer(c);
-  if (token) endSession(token);
-  return c.json({ ok: true });
-});
-
 familyRoutes.get('/me', (c) => {
-  const user = c.get('user');
-  const patients = db().all<{ id: string; preferred_name: string; relationship: string }>(
-    'SELECT p.id, p.preferred_name, m.relationship FROM patients p JOIN memberships m ON m.patient_id = p.id WHERE m.user_id = ?',
-    user.id,
+  const { id, email, name } = c.get('user');
+  const patients = db().all<{ id: string; preferred_name: string; relationship: string; role: string }>(
+    'SELECT p.id, p.preferred_name, m.relationship, m.role FROM patients p JOIN memberships m ON m.patient_id = p.id WHERE m.user_id = ?',
+    id,
   );
-  return c.json({ user, patients });
+  return c.json({ user: { id, email, name }, patients });
 });
 
 familyRoutes.get('/push/key', (c) => c.json({ key: vapidPublicKey() }));
@@ -108,7 +73,7 @@ export function createPatient(
     input.about ?? '',
     nowIso(),
   );
-  db().run('INSERT INTO memberships (user_id, patient_id, relationship) VALUES (?, ?, ?)', userId, id, input.relationship ?? '');
+  db().run("INSERT INTO memberships (user_id, patient_id, relationship, role) VALUES (?, ?, ?, 'owner')", userId, id, input.relationship ?? '');
   for (const s of DEFAULT_SCHEDULE) {
     db().run(
       'INSERT INTO schedule_items (id, patient_id, kind, label, time_of_day, calming) VALUES (?, ?, ?, ?, ?, ?)',
@@ -198,7 +163,89 @@ p.patch('/', async (c) => {
   return c.json(profile(getPatient(pt.id)!));
 });
 
-p.post('/pairing', (c) => c.json(createPairingCode(c.get('patient').id)));
+p.post('/pairing', (c) => {
+  const pairing = createPairingCode(c.get('patient').id, c.get('user').id);
+  // The QR code opens the tablet's browser straight into pairing.
+  return c.json({ ...pairing, url: `${config.publicUrl}/#/companion?pair=${pairing.code}` });
+});
+
+// ---------- Tablets ----------
+
+p.get('/devices', (c) =>
+  c.json(
+    db()
+      .all<{ id: string; name: string; created_at: string; last_seen_at: string | null }>(
+        'SELECT id, name, created_at, last_seen_at FROM devices WHERE patient_id = ? ORDER BY created_at',
+        c.get('patient').id,
+      )
+      .map((d) => ({ ...d, online: listenerCount(`device:${c.get('patient').id}`) > 0 && !!d.last_seen_at && Date.now() - Date.parse(d.last_seen_at) < 120_000 })),
+  ),
+);
+
+p.patch('/devices/:did', async (c) => {
+  const { name } = await c.req.json<{ name: string }>();
+  if (!name?.trim()) return c.json({ error: 'Please give the tablet a name.' }, 400);
+  db().run('UPDATE devices SET name = ? WHERE id = ? AND patient_id = ?', name.trim().slice(0, 60), c.req.param('did'), c.get('patient').id);
+  return c.json({ ok: true });
+});
+
+/** Disconnecting signs the tablet out at once: its token stops working. */
+p.delete('/devices/:did', (c) => {
+  const pt = c.get('patient');
+  const d = db().get<{ name: string }>('SELECT name FROM devices WHERE id = ? AND patient_id = ?', c.req.param('did'), pt.id);
+  if (!d) return c.json({ error: 'Not found' }, 404);
+  db().run('DELETE FROM devices WHERE id = ?', c.req.param('did'));
+  toDevice(pt.id, { type: 'unpaired', deviceId: c.req.param('did') });
+  audit(c.get('user').id, 'tablet_removed', `${d.name} for ${pt.preferred_name}`, requestMeta(c));
+  return c.json({ ok: true });
+});
+
+// ---------- Family members & invitations ----------
+
+p.get('/members', (c) =>
+  c.json(
+    db().all<{ id: string; name: string; email: string; relationship: string; role: string }>(
+      `SELECT u.id, u.name, u.email, m.relationship, m.role FROM memberships m JOIN users u ON u.id = m.user_id
+       WHERE m.patient_id = ? ORDER BY m.role = 'owner' DESC, u.name`,
+      c.get('patient').id,
+    ),
+  ),
+);
+
+const INVITE_DAYS = 7;
+
+p.post('/invites', async (c) => {
+  const pt = c.get('patient');
+  const { relationship } = await c.req.json<{ relationship?: string }>().catch(() => ({ relationship: '' }));
+  const token = randomBytes(24).toString('base64url');
+  const expiresAt = new Date(now().getTime() + INVITE_DAYS * 86400_000).toISOString();
+  db().run(
+    'INSERT INTO invites (token_hash, patient_id, created_by, relationship, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
+    sha256Hex(token),
+    pt.id,
+    c.get('user').id,
+    (relationship ?? '').slice(0, 60),
+    nowIso(),
+    expiresAt,
+  );
+  audit(c.get('user').id, 'invite_created', `to help care for ${pt.preferred_name}`, requestMeta(c));
+  return c.json({ token, url: `${config.publicUrl}/#/join?invite=${token}`, expiresAt });
+});
+
+p.delete('/members/:uid', (c) => {
+  const pt = c.get('patient');
+  const me = c.get('user');
+  const role = db().get<{ role: string }>('SELECT role FROM memberships WHERE user_id = ? AND patient_id = ?', me.id, pt.id)?.role;
+  const target = c.req.param('uid')!;
+  if (target !== me.id && role !== 'owner') return c.json({ error: 'Only the person who set up Kindred can remove family members.' }, 403);
+  const owners = db().get<{ n: number }>("SELECT COUNT(*) AS n FROM memberships WHERE patient_id = ? AND role = 'owner'", pt.id)!.n;
+  const targetRole = db().get<{ role: string }>('SELECT role FROM memberships WHERE user_id = ? AND patient_id = ?', target, pt.id)?.role;
+  if (!targetRole) return c.json({ error: 'Not found' }, 404);
+  if (targetRole === 'owner' && owners <= 1) return c.json({ error: 'Someone needs to stay in charge. Make another family member the owner first.' }, 409);
+  db().run('DELETE FROM memberships WHERE user_id = ? AND patient_id = ?', target, pt.id);
+  audit(me.id, 'member_removed', target === me.id ? `left ${pt.preferred_name}'s circle` : `removed a family member from ${pt.preferred_name}'s circle`, requestMeta(c));
+  return c.json({ ok: true });
+});
 
 function deviceStatus(pt: Patient) {
   const d = db().get<{ last_seen_at: string | null }>(

@@ -150,15 +150,18 @@ test('HTTP: sign in, pair a tablet, talk, and see the alert on the family side',
       body: JSON.stringify(body),
     });
 
-  const login = await json(await post('/api/auth/login', { email: DEMO_EMAIL, password: DEMO_PASSWORD }));
-  assert.equal(login.status, 200);
-  const token = login.body.token as string;
+  const sessionOf = (res: Response) => res.headers.get('set-cookie')?.match(/kindred_session=([^;]+)/)?.[1] ?? '';
+  const loginRes = await post('/api/auth/login', { email: DEMO_EMAIL, password: DEMO_PASSWORD });
+  assert.equal(loginRes.status, 200);
+  assert.match(loginRes.headers.get('set-cookie') ?? '', /HttpOnly/i, 'session cookie is HttpOnly');
+  const token = sessionOf(loginRes);
   const me = await json(await app.request('/api/me', { headers: { Authorization: `Bearer ${token}` } }));
   const pid = me.body.patients[0].id;
 
   // Another family's account can't see Rose.
-  const other = await json(await post('/api/auth/signup', { email: 'x@example.com', name: 'X', password: 'password123' }));
-  const denied = await app.request(`/api/patients/${pid}/home`, { headers: { Authorization: `Bearer ${other.body.token}` } });
+  const otherRes = await post('/api/auth/signup', { email: 'x@example.com', name: 'X', password: 'a long harbor sunrise 42' });
+  assert.equal(otherRes.status, 200);
+  const denied = await app.request(`/api/patients/${pid}/home`, { headers: { Cookie: `kindred_session=${sessionOf(otherRes)}` } });
   assert.equal(denied.status, 404);
 
   const pairing = await json(await post(`/api/patients/${pid}/pairing`, {}, token));

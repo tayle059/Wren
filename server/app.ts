@@ -4,6 +4,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import { extname } from 'node:path';
 import { familyRoutes } from './routes/family.ts';
+import { accountRoutes } from './routes/account.ts';
 import { deviceRoutes } from './routes/device.ts';
 import { HttpError } from './routes/common.ts';
 import { CONTENT_TYPES, mediaFile, verifyMedia } from './media.ts';
@@ -23,6 +24,18 @@ export function buildApp() {
     await next();
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('Referrer-Policy', 'no-referrer');
+    c.header('X-Frame-Options', 'DENY');
+    c.header('Permissions-Policy', 'camera=(), geolocation=(), microphone=(self)');
+    if (c.res.headers.get('Content-Type')?.includes('text/html')) {
+      // Only our own scripts run; fonts come from Google Fonts; media can be recorded locally (blob:).
+      c.header(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://appleid.apple.com",
+      );
+    }
+    if (c.req.url.startsWith('https:') || c.req.header('x-forwarded-proto') === 'https') {
+      c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
   });
 
   app.get('/api/config', (c) => c.json({ brain: hasMeta() ? 'muse' : 'offline', stt: sttMode() }));
@@ -35,6 +48,7 @@ export function buildApp() {
     });
   }
   app.route('/api/device', deviceRoutes);
+  app.route('/api', accountRoutes); // sign-in routes must come before the family routes' sign-in check
   app.route('/api', familyRoutes);
 
   // Signed, private media.

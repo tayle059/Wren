@@ -204,7 +204,73 @@ CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, create
 CREATE INDEX IF NOT EXISTS idx_conv_patient ON conversations(patient_id, started_at);
 CREATE INDEX IF NOT EXISTS idx_alerts_patient ON alerts(patient_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_obs_patient ON observations(patient_id, at);
+
+-- Sign-in with Google, Apple and Facebook.
+CREATE TABLE IF NOT EXISTS identities (
+  provider TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (provider, subject)
+);
+CREATE TABLE IF NOT EXISTS oauth_states (
+  state TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  verifier TEXT NOT NULL,
+  nonce TEXT NOT NULL,
+  browser_hash TEXT NOT NULL,
+  link_user_id TEXT,
+  expires_at TEXT NOT NULL
+);
+-- Second step of sign-in when two-step verification is on.
+CREATE TABLE IF NOT EXISTS mfa_challenges (
+  token_hash TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  method TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS invites (
+  token_hash TEXT PRIMARY KEY,
+  patient_id TEXT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  relationship TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_by TEXT,
+  used_at TEXT
+);
+CREATE TABLE IF NOT EXISTS security_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  detail TEXT NOT NULL DEFAULT '',
+  ip TEXT NOT NULL DEFAULT '',
+  user_agent TEXT NOT NULL DEFAULT '',
+  at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_security_user ON security_events(user_id, at);
 `;
+
+// Columns added after the first release. Each is applied once; existing data is kept.
+const MIGRATIONS = [
+  "ALTER TABLE users ADD COLUMN totp_secret TEXT",
+  "ALTER TABLE users ADD COLUMN totp_pending TEXT",
+  "ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN totp_last_step INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN recovery_codes_json TEXT NOT NULL DEFAULT '[]'",
+  "ALTER TABLE users ADD COLUMN failed_logins INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN locked_until TEXT",
+  "ALTER TABLE sessions ADD COLUMN expires_at TEXT",
+  "ALTER TABLE sessions ADD COLUMN last_used_at TEXT",
+  "ALTER TABLE sessions ADD COLUMN user_agent TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE sessions ADD COLUMN ip TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE sessions ADD COLUMN method TEXT NOT NULL DEFAULT 'password'",
+  "ALTER TABLE memberships ADD COLUMN role TEXT NOT NULL DEFAULT 'family'",
+  "ALTER TABLE devices ADD COLUMN name TEXT NOT NULL DEFAULT 'Tablet'",
+  "ALTER TABLE pairing_codes ADD COLUMN created_by TEXT",
+];
 
 type Row = Record<string, unknown>;
 
@@ -214,6 +280,13 @@ export class Db {
     this.raw = new DatabaseSync(file);
     this.raw.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
     this.raw.exec(SCHEMA);
+    for (const sql of MIGRATIONS) {
+      try {
+        this.raw.exec(sql);
+      } catch (e) {
+        if (!/duplicate column/i.test((e as Error).message)) throw e;
+      }
+    }
   }
   get<T = Row>(sql: string, ...params: SQLInputValue[]): T | undefined {
     return this.raw.prepare(sql).get(...params) as T | undefined;
